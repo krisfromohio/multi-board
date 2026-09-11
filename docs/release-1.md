@@ -29,6 +29,7 @@ Release 1 does not require persona-specific permissions or interfaces.
 - name
 - source assignee
 - description
+- whether the source item remains present in the latest accepted source projection
 
 ### Multi Board-owned Scrum overlay
 
@@ -38,21 +39,38 @@ Release 1 does not require persona-specific permissions or interfaces.
 - team assignee
 - board column
 - board-column change history
+- archived marker for source items no longer present in the latest accepted projection
 
 `sourceAssignee` and `teamAssignee` are intentionally distinct. Release 1 team assignment does not imply any source-system change.
+
+## Source-item lifecycle
+
+When an item that existed in the previously accepted source projection is absent from a later successfully accepted source projection, Multi Board marks that item as archived and no longer displays it in the active backlog or sprint board. Archiving must not silently delete its persisted Scrum overlay or transition history.
+
+A failed or invalid source import does not cause archival, because the new projection was never accepted.
 
 ## Story-point semantics
 
 Story points are arbitrary non-negative whole numbers. An item may be unestimated. Unestimated is distinct from an explicit estimate of `0`; decimal and negative values are invalid.
+
+## Board origin semantics
+
+Board-column configuration designates one column as the **origin** column. Newly sprint-assigned work enters the configured origin column rather than relying on a hard-coded column name. R1 configuration is invalid if it cannot identify exactly one usable origin column.
+
+## Configuration-change integrity
+
+Sprint, team-member, and board-column definitions are supplied to the POC for R1. If configuration changes leave persisted Scrum state referring to a removed or unknown sprint, team member, or board column, Multi Board preserves the persisted reference and surfaces the state as invalid/orphaned rather than silently remapping it. The state must be corrected before it is treated as normal valid state.
 
 ## Release 1 implementation constraints
 
 - Federated source records are represented through JSON fixtures/adapters.
 - Sprint definitions are supplied to the POC.
 - Team-member definitions are supplied to the POC.
-- Board-column definitions are supplied to the POC.
+- Board-column definitions are supplied to the POC, including exactly one origin designation.
 - No live Jira, ServiceNow, or Epic Nova synchronization.
 - Multi Board-owned state must survive refresh/restart.
+- Accepted source projections and Multi Board-owned state must be reconstructable without browser/session/conversation state.
+- Source refresh is validated and accepted atomically; failed imports preserve the last-known-good projection.
 - The application must remain local-only for R1 and require no off-site sensitive-data storage.
 - The required software stack must have zero mandatory license, hosting, subscription, or service fees.
 - The Product Owner must not need local-administrator rights to build or run the POC.
@@ -67,7 +85,7 @@ The release candidate must demonstrate:
 1. Load work representing Jira, ServiceNow, and Epic Nova into one backlog, identify the source, and access the supplied source URL.
 2. Prioritize the unified backlog by drag/drop.
 3. Assign and change story-point estimates during refinement.
-4. Assign work to a configured sprint during sprint planning.
+4. Assign work to a configured sprint during sprint planning and place newly assigned work in the configured origin board column.
 5. Assign work to a team member within Multi Board.
 6. View sprint work on a board using configured columns.
 7. Move work between board columns using drag/drop.
@@ -75,7 +93,10 @@ The release candidate must demonstrate:
 9. Retain Scrum state across refresh/restart.
 10. Retain timestamped board-column transition history.
 11. Distinguish source-owned information from Multi Board-owned Scrum state throughout.
-12. Complete the journey through a professional, modern, cohesive interface without requiring an apology for prototype-quality UI.
+12. Archive and hide an item after a successfully accepted source projection no longer contains it, without losing its persisted Scrum/history state.
+13. Surface orphaned/invalid persisted state caused by configuration changes instead of silently remapping it.
+14. Complete the journey through a professional, modern, cohesive interface without requiring an apology for prototype-quality UI.
+15. Operate without sending sensitive source/work data to external services.
 
 ## Story sequence
 
