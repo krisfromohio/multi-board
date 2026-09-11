@@ -87,7 +87,6 @@ Multi Board-owned state includes:
 - team assignee
 - board column
 - board-column transition history
-- archival marker for source items absent from the latest accepted source projection
 
 `sourceAssignee` and `teamAssignee` are intentionally separate.
 
@@ -122,32 +121,26 @@ The exact physical schema may evolve while stories are implemented.
 
 ### Source projection refresh
 
-Source imports follow this model:
+Source imports should follow this model:
 
 ```text
 external input
   -> parse
   -> validate
   -> normalize
-  -> transactional acceptance
+  -> transactional import
   -> last-known-good source projection
 ```
 
 A malformed import must not silently replace valid source data with an incomplete or misleading projection.
 
-When a successfully accepted source projection no longer contains a previously known work item, that item is marked archived and omitted from active backlog/board queries. Its Scrum overlay and transition history are retained rather than deleted. A failed import cannot archive items because it never becomes the accepted projection.
+If a previously known source item is absent from a later successfully accepted source projection, it is marked archived and omitted from active views while its Scrum overlay and board-transition history remain persisted. A failed import must not archive items.
 
-### Board origin
+### Board origin and configuration integrity
 
-Board-column configuration designates exactly one usable column as the `origin`. Newly sprint-assigned work begins in that configured origin column. No domain logic may assume a hard-coded column name such as `To Do`.
+Board-column configuration designates exactly one `origin` column. Newly sprint-assigned work enters that configured origin column; no hard-coded column name defines initial state. Zero or multiple origin designations are invalid configuration.
 
-Configuration with zero or multiple origin columns is invalid and must not be silently accepted.
-
-### Configuration-reference integrity
-
-Persisted Scrum state may refer to a sprint, team member, or board column that is later removed from supplied configuration. Multi Board preserves that reference and marks/surfaces the state as invalid or orphaned; it must not silently remap the state to a different configured value.
-
-This rule protects both current-state integrity and historical meaning.
+If persisted Scrum state refers to a sprint, team member, or board column removed from supplied configuration, preserve the stored reference and surface it as invalid/orphaned. Do not silently remap it.
 
 ### Board transitions
 
@@ -158,19 +151,19 @@ Board movement updates current board state and appends transition history in one
 - Validate all external/configuration input before accepting it.
 - Prefer last-known-good state over destructive replacement after an invalid import.
 - Apply state-changing operations transactionally where multiple records must remain consistent.
-- Archive source items only after a successfully accepted projection confirms their absence.
-- Surface invalid/orphaned configured states rather than silently coercing or remapping them.
+- Surface invalid configured states rather than silently coercing them.
 - Ensure persisted Scrum state can reconstruct the working board after refresh or restart.
 - Do not depend on browser/session/conversation state for durable product state.
 
 ## Security and privacy constraints
 
-Release 1 has a strict local-data posture.
+Release 1 has a strict local-data posture for sensitive runtime data.
 
 - Bind the application to `127.0.0.1`, not `0.0.0.0`.
 - Do not require cloud hosting, a cloud database, remote analytics, telemetry, remote logging, a hosted auth provider, or a CDN.
 - Bundle application JavaScript, CSS, fonts, and other assets locally.
 - Do not commit PII, trade secrets, real source exports, local SQLite databases, or local overrides to Git.
+- The GitHub repository may contain non-confidential source code, product documentation, architecture material, and synthetic fixtures.
 - Treat descriptions, names, assignees, and arbitrary source payloads as potentially sensitive.
 - Logs should use identifiers and operational summaries rather than copying source-record contents.
 - Render untrusted source text safely; do not render source HTML unsanitized.
@@ -190,12 +183,6 @@ Use Vitest for business rules such as:
 - unestimated versus explicit zero
 - invalid board-column rejection
 - source refresh not overwriting Scrum-owned state
-- failed source import preserving last-known-good projection
-- absent source item becoming archived only after successful refresh
-- archived items excluded from active views while retained in persistence
-- exactly one valid origin column required
-- newly sprint-assigned work entering the origin column
-- removed configuration references becoming invalid/orphaned rather than remapped
 - board movement and history invariants
 
 ### Persistence integration tests
@@ -210,7 +197,7 @@ Use Playwright for representative user journeys that map directly to story accep
 
 No distributed cache, Redis, queue, search engine, WebSocket layer, event bus, or microservice architecture is justified for Release 1.
 
-SQLite indexes should follow observed access paths such as source identity, sprint, team assignee, board column, archive state, and work-item history.
+SQLite indexes should follow observed access paths such as source identity, sprint, team assignee, board column, and work-item history.
 
 Optimize only after representative workload demonstrates a problem.
 
@@ -230,10 +217,8 @@ The following should remain substantially stable:
 - React interaction model
 - core domain concepts
 - Scrum-overlay ownership semantics
-- source-item lifecycle semantics
 - source-adapter contract
 - application services
-- board-origin configuration semantics
 - board transition model
 - most API contracts and business rules
 
@@ -241,16 +226,13 @@ The following should remain substantially stable:
 
 1. Source systems own source work; Multi Board owns Scrum coordination state.
 2. JSON is an R1 adapter, not the persistence architecture.
-3. Sensitive data does not leave the machine in R1.
+3. Sensitive runtime data does not leave the machine in R1.
 4. The system remains a modular monolith until evidence justifies distribution.
 5. Add abstraction only at known change boundaries.
 6. Architecture is implemented incrementally through vertical stories, not through horizontal architecture projects.
 7. R1 must require zero mandatory license, subscription, hosting, or service fees.
 8. R1 development and operation must not require local-administrator rights from the Product Owner.
-9. Failed imports preserve the last-known-good source projection.
-10. A source item missing from a successfully accepted projection is archived, hidden from active views, and retained for history.
-11. New sprint work starts in the board column designated as origin by configuration.
-12. Invalid persisted references caused by configuration changes are surfaced, never silently remapped.
+9. GitHub may hold non-confidential code/docs and synthetic fixtures; real source-system data and other sensitive runtime artifacts stay local and uncommitted.
 
 ## Open environment check
 
