@@ -1,66 +1,36 @@
 # Multi Board
 
-Multi Board is a federated Scrum-management layer for teams whose work originates in multiple systems. The source systems remain authoritative for the underlying work; Multi Board adds the Scrum state needed to manage that work as one backlog and sprint.
+Multi Board is a federated Scrum-management proof of concept. It presents work from multiple external systems in one Scrum backlog and sprint board while preserving those source systems as authoritative for the underlying work records.
+
+Release 1 is intentionally local-first: source work is supplied through JSON fixtures, Scrum overlay state is persisted locally, and no live Jira, ServiceNow, or Epic Nova integration is required.
 
 ## Release 1
 
-Release 1 is a local-only proof of concept. A Scrum team should be able to run a representative two-week sprint containing mixed Jira, ServiceNow, and Epic Nova work without recreating those source items in another work-management system.
+The Release 1 goal, boundaries, lifecycle semantics, acceptance journey, and issue sequence are documented in [docs/release-1.md](docs/release-1.md).
 
-The Release 1 backlog is tracked in the **Multi Board Release 1** milestone. The planned sequence is:
+## Architecture
 
-1. #1 — S1: Validate the interaction and visual design
-2. #2 — R1-1: Understand the team's complete workload
-3. #3 — R1-2: Refine and prioritize upcoming work
-4. #4 — R1-3: Plan a sprint from the unified backlog
-5. #5 — R1-4: Coordinate the team's active sprint work
-6. #6 — R1-5: Demonstrate the federated Scrum concept
+The converged Release 1 architecture is documented in [docs/architecture.md](docs/architecture.md).
 
-Issue #7 is the release-level reference.
+Key constraints include:
 
-## Architecture direction
+- zero mandatory software licensing, subscription, hosting, or service fees
+- no local-administrator rights required for the Product Owner to build or run the POC
+- no PII or trade-secret source data stored off the local machine by Multi Board
+- local-only network exposure for R1
+- source systems own source work; Multi Board owns only the Scrum coordination overlay
+- missing source items are archived only after a successfully accepted source refresh, hidden from active views, and retained for history
+- newly sprint-assigned work enters the board column designated as the origin in configuration
+- persisted state made invalid by configuration changes is surfaced rather than silently remapped
 
-Release 1 is a local-first TypeScript modular monolith:
+## Planning and refinement
 
-- React + Material UI for the browser UI
-- Node.js + Fastify for the local application server
-- SQLite for local persistence
-- Zod at external-data boundaries
-- dnd-kit for backlog and board drag/drop
-- Vitest and Playwright for automated evidence
-- JSON as the Release 1 source-adapter input, not as the application's working database
+The release/milestone refinement protocol is documented in [docs/refinement-protocol.md](docs/refinement-protocol.md).
 
-The application is intended to bind only to `127.0.0.1` in Release 1 and require no cloud services.
+## GitHub backlog
 
-See [docs/architecture.md](docs/architecture.md) for the architecture and security constraints and [docs/release-1.md](docs/release-1.md) for the release definition.
+Release 1 work is tracked in the **Multi Board Release 1** milestone. Issue #7 is the release-level reference, with the design spike and vertical product stories linked from there.
 
-## Data ownership
+## Sensitive data
 
-Source-owned and read-only in Release 1:
-
-- source system
-- source URL
-- source ID
-- name
-- source assignee
-- description
-
-Multi Board-owned Scrum overlay:
-
-- story-point estimate
-- sprint assignment
-- backlog order
-- team assignee
-- board column
-- board-column transition history
-
-`sourceAssignee` and `teamAssignee` are intentionally different concepts.
-
-## Security and cost constraints
-
-Release 1 must be buildable, testable, run, and demonstrated with zero required software licensing, subscription, hosting, or service fees. Sensitive source data, PII, trade secrets, local databases, and real source exports must never be committed to this repository.
-
-The repository should contain only code, documentation, and synthetic test/demo fixtures.
-
-## Local setup
-
-Detailed one-time setup instructions will be finalized after confirming the installed Node.js version. No local-administrator rights should be required by the Multi Board development workflow.
+Only synthetic/demo fixture data belongs in this repository. Real source exports, local databases, PII, trade secrets, and local runtime data must stay out of Git and are ignored by repository configuration.
