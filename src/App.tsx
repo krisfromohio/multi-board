@@ -12,6 +12,7 @@ import StorageRoundedIcon from '@mui/icons-material/StorageRounded';
 import WarningAmberRoundedIcon from '@mui/icons-material/WarningAmberRounded';
 import UploadFileRoundedIcon from '@mui/icons-material/UploadFileRounded';
 import SearchRoundedIcon from '@mui/icons-material/SearchRounded';
+import demoTeam from '../fixtures/demo/team.json';
 import { columns, demoItems, type BoardColumnId, type DemoWorkItem, type SourceSystem } from './demoData';
 
 const sourceLabels: Record<SourceSystem, string> = { JIRA: 'Jira', SERVICENOW: 'ServiceNow', NOVA: 'Epic Nova' };
@@ -24,6 +25,8 @@ const CURRENT_SPRINT = 'Sprint 19';
 const originColumn = columns.find((column) => column.origin) ?? columns[0];
 
 type SourceHealth = Record<SourceSystem, 'current' | 'stale'>;
+type TeamConfig = { id: string; displayName: string };
+type FixtureEnvelope = { team?: TeamConfig; items?: DemoWorkItem[] };
 
 function SourceChip({ source }: { source: SourceSystem }) {
   return <Chip size="small" variant="outlined" label={sourceLabels[source]} sx={{ ...sourceStyles[source], fontWeight: 750 }} />;
@@ -163,6 +166,7 @@ function ItemDialog({ item, members, onClose, onSave }: { item: DemoWorkItem | n
 
 export function App() {
   const [items, setItems] = useState(() => demoItems.map((i) => ({ ...i })));
+  const [team, setTeam] = useState<TeamConfig>(() => ({ ...demoTeam }));
   const [tab, setTab] = useState(0);
   const [assignee, setAssignee] = useState('All');
   const [sourceFilter, setSourceFilter] = useState<SourceSystem | 'All'>('All');
@@ -247,16 +251,24 @@ export function App() {
   const loadFixture = async (file?: File) => {
     if (!file) return;
     try {
-      const raw = JSON.parse(await file.text()) as { items?: DemoWorkItem[] } | DemoWorkItem[];
+      const raw = JSON.parse(await file.text()) as FixtureEnvelope | DemoWorkItem[];
       const candidate = Array.isArray(raw) ? raw : raw.items;
+      const candidateTeam: TeamConfig = Array.isArray(raw) ? { ...demoTeam } : (raw.team ?? { ...demoTeam });
+
       if (!Array.isArray(candidate) || candidate.length === 0) throw new Error('The fixture does not contain an items array.');
+      if (typeof candidateTeam.id !== 'string' || candidateTeam.id.trim() === '' || typeof candidateTeam.displayName !== 'string' || candidateTeam.displayName.trim() === '') {
+        throw new Error('Team configuration requires non-empty id and displayName values.');
+      }
+
       const keys = new Set<string>();
       for (const item of candidate) {
         if (!item?.key || !item.sourceSystem || !item.sourceId || !item.sourceUrl || !item.name) throw new Error('One or more fixture items are missing required fields.');
         if (keys.has(item.key)) throw new Error(`Duplicate work-item key: ${item.key}`);
         keys.add(item.key);
       }
+
       setItems(candidate.map((i) => ({ ...i })));
+      setTeam({ id: candidateTeam.id.trim(), displayName: candidateTeam.displayName.trim() });
       setFixtureLabel(`${file.name} · loaded locally`);
       setFixtureError(null);
       clearFilters();
@@ -282,7 +294,7 @@ export function App() {
         <Stack direction="row" justifyContent="space-between" spacing={2} alignItems="center" sx={{ mb: 2.5 }}>
           <Box>
             <Stack direction="row" spacing={1.25} alignItems="center" useFlexGap flexWrap="wrap">
-              <Typography variant="h4">Clinical Apps Team</Typography>
+              <Typography variant="h4">{team.displayName}</Typography>
               <Chip size="small" label={`${items.length} work items`} sx={{ bgcolor: '#eef2f8', color: 'text.secondary' }} />
             </Stack>
             <Typography variant="body2" color="text.secondary" sx={{ mt: .5 }}>{fixtureLabel}</Typography>
