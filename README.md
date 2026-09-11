@@ -4,6 +4,19 @@ Multi Board is a federated Scrum-management proof of concept. It presents work f
 
 Release 1 is intentionally local-first: source work is supplied through JSON fixtures, Scrum overlay state is persisted locally, and no live Jira, ServiceNow, or Epic Nova integration is required.
 
+## Quick start
+
+Release 1 targets Node.js `v24.16.0` and uses the built-in `node:sqlite` module, so no separate database installation is required.
+
+```powershell
+npm install
+npm run dev
+```
+
+Then open `http://127.0.0.1:5173`.
+
+See [local setup](docs/local-setup.md) for build, test, runtime-data, and troubleshooting details.
+
 ## Release 1
 
 The Release 1 goal, boundaries, lifecycle semantics, acceptance journey, and issue sequence are documented in [docs/release-1.md](docs/release-1.md).
@@ -46,13 +59,3 @@ Release 1 work is tracked in the **Multi Board Release 1** milestone. Issue #7 i
 ## Sensitive data
 
 Only synthetic/demo fixture data belongs in this repository. Real source exports, local databases, PII, trade secrets, and local runtime data must stay out of Git and are ignored by repository configuration.
-
-## Remaining environment input
-
-Before the runnable Node/React/SQLite scaffold is locked, confirm the installed Node version:
-
-```powershell
-node --version
-```
-
-That determines the cleanest SQLite access implementation. It does not change the product, domain, data, or lifecycle design documented above.
