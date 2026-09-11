@@ -18,11 +18,11 @@ export interface DemoWorkItem {
   description: string;
 }
 
-export const columns: Array<{ id: BoardColumnId; name: string }> = [
-  { id: 'BACKLOG', name: 'Backlog' },
-  { id: 'TODO', name: 'To Do' },
-  { id: 'READY', name: 'Ready' },
-  { id: 'DONE', name: 'Done' },
+export const columns: Array<{ id: BoardColumnId; name: string; origin: boolean }> = [
+  { id: 'BACKLOG', name: 'Backlog', origin: true },
+  { id: 'TODO', name: 'To Do', origin: false },
+  { id: 'READY', name: 'Ready', origin: false },
+  { id: 'DONE', name: 'Done', origin: false },
 ];
 
 export const demoItems: DemoWorkItem[] = [
