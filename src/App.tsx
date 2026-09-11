@@ -3,14 +3,15 @@ import {
   AppBar,
   Avatar,
   Box,
-  Button,
   Card,
   CardContent,
   Chip,
   Container,
   Divider,
   FormControl,
+  IconButton,
   InputLabel,
+  Menu,
   MenuItem,
   Select,
   Stack,
@@ -22,6 +23,9 @@ import {
 } from '@mui/material';
 import OpenInNewRoundedIcon from '@mui/icons-material/OpenInNewRounded';
 import DragIndicatorRoundedIcon from '@mui/icons-material/DragIndicatorRounded';
+import MenuRoundedIcon from '@mui/icons-material/MenuRounded';
+import RefreshRoundedIcon from '@mui/icons-material/RefreshRounded';
+import StorageRoundedIcon from '@mui/icons-material/StorageRounded';
 import { columns, demoItems, teamMembers, type DemoWorkItem, type SourceSystem } from './demoData';
 
 const sourceLabels: Record<SourceSystem, string> = {
@@ -117,7 +121,10 @@ function Backlog() {
 export function App() {
   const [tab, setTab] = useState(1);
   const [assignee, setAssignee] = useState('All');
+  const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
   const sprintCount = useMemo(() => demoItems.filter((item) => item.sprint === 'Sprint 19').length, []);
+
+  const closeMenu = () => setMenuAnchor(null);
 
   return (
     <Box sx={{ minHeight: '100vh' }}>
@@ -133,15 +140,29 @@ export function App() {
       </AppBar>
 
       <Container maxWidth={false} sx={{ px: { xs: 2, md: 4 }, py: 3 }}>
-        <Stack direction={{ xs: 'column', md: 'row' }} justifyContent="space-between" spacing={2} alignItems={{ md: 'center' }} sx={{ mb: 2.5 }}>
-          <Box>
-            <Typography variant="h4">Clinical Apps Team</Typography>
-            <Typography color="text.secondary">One working view across Jira, ServiceNow, and Epic Nova.</Typography>
-          </Box>
-          <Stack direction="row" spacing={1.5}>
-            <Button variant="outlined">Refresh sources</Button>
-            <Button variant="contained">Open source status</Button>
-          </Stack>
+        <Stack direction="row" justifyContent="space-between" spacing={2} alignItems="center" sx={{ mb: 2.5 }}>
+          <Typography variant="h4">Clinical Apps Team</Typography>
+          <Tooltip title="Workspace menu">
+            <IconButton
+              aria-label="Open workspace menu"
+              aria-controls={menuAnchor ? 'workspace-menu' : undefined}
+              aria-haspopup="true"
+              aria-expanded={menuAnchor ? 'true' : undefined}
+              onClick={(event) => setMenuAnchor(event.currentTarget)}
+            >
+              <MenuRoundedIcon />
+            </IconButton>
+          </Tooltip>
+          <Menu id="workspace-menu" anchorEl={menuAnchor} open={Boolean(menuAnchor)} onClose={closeMenu}>
+            <MenuItem onClick={closeMenu}>
+              <RefreshRoundedIcon fontSize="small" sx={{ mr: 1.25 }} />
+              Refresh sources
+            </MenuItem>
+            <MenuItem onClick={closeMenu}>
+              <StorageRoundedIcon fontSize="small" sx={{ mr: 1.25 }} />
+              Source status
+            </MenuItem>
+          </Menu>
         </Stack>
 
         <Card sx={{ mb: 2.5 }}>
