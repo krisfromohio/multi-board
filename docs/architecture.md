@@ -87,6 +87,7 @@ Multi Board-owned state includes:
 - team assignee
 - board column
 - board-column transition history
+- archival marker for source items absent from the latest accepted source projection
 
 `sourceAssignee` and `teamAssignee` are intentionally separate.
 
@@ -121,18 +122,32 @@ The exact physical schema may evolve while stories are implemented.
 
 ### Source projection refresh
 
-Source imports should follow this model:
+Source imports follow this model:
 
 ```text
 external input
   -> parse
   -> validate
   -> normalize
-  -> transactional import
+  -> transactional acceptance
   -> last-known-good source projection
 ```
 
 A malformed import must not silently replace valid source data with an incomplete or misleading projection.
+
+When a successfully accepted source projection no longer contains a previously known work item, that item is marked archived and omitted from active backlog/board queries. Its Scrum overlay and transition history are retained rather than deleted. A failed import cannot archive items because it never becomes the accepted projection.
+
+### Board origin
+
+Board-column configuration designates exactly one usable column as the `origin`. Newly sprint-assigned work begins in that configured origin column. No domain logic may assume a hard-coded column name such as `To Do`.
+
+Configuration with zero or multiple origin columns is invalid and must not be silently accepted.
+
+### Configuration-reference integrity
+
+Persisted Scrum state may refer to a sprint, team member, or board column that is later removed from supplied configuration. Multi Board preserves that reference and marks/surfaces the state as invalid or orphaned; it must not silently remap the state to a different configured value.
+
+This rule protects both current-state integrity and historical meaning.
 
 ### Board transitions
 
@@ -143,7 +158,8 @@ Board movement updates current board state and appends transition history in one
 - Validate all external/configuration input before accepting it.
 - Prefer last-known-good state over destructive replacement after an invalid import.
 - Apply state-changing operations transactionally where multiple records must remain consistent.
-- Surface invalid configured states rather than silently coercing them.
+- Archive source items only after a successfully accepted projection confirms their absence.
+- Surface invalid/orphaned configured states rather than silently coercing or remapping them.
 - Ensure persisted Scrum state can reconstruct the working board after refresh or restart.
 - Do not depend on browser/session/conversation state for durable product state.
 
@@ -174,6 +190,12 @@ Use Vitest for business rules such as:
 - unestimated versus explicit zero
 - invalid board-column rejection
 - source refresh not overwriting Scrum-owned state
+- failed source import preserving last-known-good projection
+- absent source item becoming archived only after successful refresh
+- archived items excluded from active views while retained in persistence
+- exactly one valid origin column required
+- newly sprint-assigned work entering the origin column
+- removed configuration references becoming invalid/orphaned rather than remapped
 - board movement and history invariants
 
 ### Persistence integration tests
@@ -188,7 +210,7 @@ Use Playwright for representative user journeys that map directly to story accep
 
 No distributed cache, Redis, queue, search engine, WebSocket layer, event bus, or microservice architecture is justified for Release 1.
 
-SQLite indexes should follow observed access paths such as source identity, sprint, team assignee, board column, and work-item history.
+SQLite indexes should follow observed access paths such as source identity, sprint, team assignee, board column, archive state, and work-item history.
 
 Optimize only after representative workload demonstrates a problem.
 
@@ -208,8 +230,10 @@ The following should remain substantially stable:
 - React interaction model
 - core domain concepts
 - Scrum-overlay ownership semantics
+- source-item lifecycle semantics
 - source-adapter contract
 - application services
+- board-origin configuration semantics
 - board transition model
 - most API contracts and business rules
 
@@ -223,6 +247,10 @@ The following should remain substantially stable:
 6. Architecture is implemented incrementally through vertical stories, not through horizontal architecture projects.
 7. R1 must require zero mandatory license, subscription, hosting, or service fees.
 8. R1 development and operation must not require local-administrator rights from the Product Owner.
+9. Failed imports preserve the last-known-good source projection.
+10. A source item missing from a successfully accepted projection is archived, hidden from active views, and retained for history.
+11. New sprint work starts in the board column designated as origin by configuration.
+12. Invalid persisted references caused by configuration changes are surfaced, never silently remapped.
 
 ## Open environment check
 
