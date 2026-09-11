@@ -71,5 +71,5 @@ Failed mutations must be visible and leave persisted/visible state consistent. T
 ## D23 — No speculative infrastructure
 No microservices, event bus, Redis, queue, WebSockets, search service, generalized plugin framework, or production-scale infrastructure is added without evidence from a story.
 
-## D24 — Node/SQLite implementation choice pending environment
-The architecture is fixed, but exact SQLite access/dependency versions wait for the installed Node version. Prefer built-in `node:sqlite` when usable; otherwise choose the simplest zero-cost, no-admin fallback.
+## D24 — Node/SQLite implementation choice
+Development/runtime environment is Node.js `v24.16.0`. R1 will use the built-in `node:sqlite` module with `DatabaseSync`; no native SQLite npm module or external database service is required. This keeps setup zero-cost, avoids local native-build tooling/admin requirements, and preserves the repository abstraction so persistence can be replaced later if needed.
