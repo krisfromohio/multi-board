@@ -62,6 +62,22 @@ Rules:
 - if both dates exist, `endsOn >= startsOn`
 - R1 does not infer an active sprint from dates; sprint selection is explicit in the UI
 
+## Team identity configuration
+
+```json
+{
+  "id": "demo-team",
+  "displayName": "Demo Scrum Team"
+}
+```
+
+Rules:
+- `id` and `displayName` are required and non-empty
+- the display name is presentation/configuration data and must not be hard-coded into the UI
+- the team identity is distinct from the list of assignable team members
+- committed examples must use synthetic/generic team identity values
+- the S1 design-validation fixture may optionally include this object as a top-level `team` property; when omitted, the committed synthetic demo team is used
+
 ## Team-member configuration
 
 ```json
@@ -121,6 +137,7 @@ fixtures/
     servicenow.json
     nova.json
     sprints.json
+    team.json
     team-members.json
     board-columns.json
 fixtures/private/        # ignored
