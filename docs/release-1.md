@@ -134,25 +134,7 @@ Issue #7 is the release-level GitHub reference. All Release 1 issues belong to t
 
 ## Explicitly out of scope
 
-Release 1 does not require:
-
-- live source-system integration
-- source-system write-back
-- authentication or authorization
-- multiple teams
-- configuration-management UI
-- sprint creation/editing UI
-- source-status mapping
-- reporting or flow metrics
-- velocity/capacity calculations
-- search
-- arbitrary filters beyond team assignee
-- notifications
-- comments
-- attachments
-- dependencies
-- production hosting or scalability
-- sophisticated distributed conflict resolution
+Release 1 does not require live source-system integration, source-system write-back, authentication or authorization, multiple teams, configuration-management UI, sprint creation/editing UI, source-status mapping, reporting or flow metrics, velocity/capacity calculations, search, arbitrary filters beyond team assignee, notifications, comments, attachments, dependencies, production hosting or scalability, or sophisticated distributed conflict resolution.
 
 ## Release-quality principle
 
@@ -161,3 +143,7 @@ Visual quality is mandatory within every user-facing vertical slice. If the pres
 ## Product question answered by Release 1
 
 > Is a federated Scrum-management layer sufficiently useful and credible to justify continued investment and live source-system integration?
+
+## Refinement status
+
+Product semantics, authority, lifecycle, failure behavior, architecture impact, and release-level evidence have been refined to convergence. No material product decision remains open. The only remaining environment check is the installed Node.js version, which affects the SQLite access implementation rather than product behavior or architecture.
