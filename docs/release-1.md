@@ -29,7 +29,7 @@ Release 1 does not require persona-specific permissions or interfaces.
 - name
 - source assignee
 - description
-- whether the source item remains present in the latest accepted source projection
+- whether the source item remains present in the latest accepted projection for its source
 
 ### Multi Board-owned Scrum overlay
 
@@ -37,25 +37,43 @@ Release 1 does not require persona-specific permissions or interfaces.
 - sprint assignment
 - backlog priority/order
 - team assignee
-- board column
+- board column while sprint-assigned
 - board-column change history
-- archived marker for source items no longer present in the latest accepted projection
+- archived marker for source items no longer present in the latest accepted projection for their source
 
 `sourceAssignee` and `teamAssignee` are intentionally distinct. Release 1 team assignment does not imply any source-system change.
 
-## Source-item lifecycle
+## Work-item identity and lifecycle
 
-When an item that existed in the previously accepted source projection is absent from a later successfully accepted source projection, Multi Board marks that item as archived and no longer displays it in the active backlog or sprint board. Archiving must not silently delete its persisted Scrum overlay or transition history.
+The stable work-item identity is `(sourceSystem, sourceId)`.
+
+When an item that existed in the previously accepted projection for a source is absent from a later successfully accepted projection for that same source, Multi Board marks that item as archived and no longer displays it in the active backlog or sprint board. Archiving must not silently delete its persisted Scrum overlay or transition history.
 
 A failed or invalid source import does not cause archival, because the new projection was never accepted.
+
+If an archived item later reappears with the same `(sourceSystem, sourceId)`, Multi Board reactivates the existing item and preserves its Scrum overlay and history rather than creating a duplicate or resetting local Scrum state.
+
+## Source refresh isolation
+
+Jira, ServiceNow, and Epic Nova are independent source projections. Each source refresh is validated and accepted independently. A failed refresh for one source preserves that source's last-known-good projection and does not block acceptance of a valid refresh from another source. Archival is scoped only to the source whose refresh succeeds.
 
 ## Story-point semantics
 
 Story points are arbitrary non-negative whole numbers. An item may be unestimated. Unestimated is distinct from an explicit estimate of `0`; decimal and negative values are invalid.
 
+## Sprint and board-state lifecycle
+
+Board-column state exists only while work is sprint-assigned.
+
+- Assigning an unsprinted item to a sprint places it in the configured `origin` board column.
+- Removing an item from a sprint clears its current board column.
+- Moving an item directly from one sprint to another places it in the destination sprint's configured `origin` column instead of carrying workflow state across sprint boundaries.
+
+Board transition history records sprint context as well as work item, previous column, resulting column, and timestamp. Previous or resulting column may be null when entering or leaving sprint context.
+
 ## Board origin semantics
 
-Board-column configuration designates one column as the **origin** column. Newly sprint-assigned work enters the configured origin column rather than relying on a hard-coded column name. R1 configuration is invalid if it cannot identify exactly one usable origin column.
+Board-column configuration designates exactly one column as the **origin** column. Newly sprint-assigned work enters the configured origin column rather than relying on a hard-coded column name. R1 configuration is invalid if it cannot identify exactly one usable origin column.
 
 ## Configuration-change integrity
 
@@ -63,14 +81,14 @@ Sprint, team-member, and board-column definitions are supplied to the POC for R1
 
 ## Release 1 implementation constraints
 
-- Federated source records are represented through JSON fixtures/adapters.
+- Federated source records are represented through JSON source adapters.
 - Sprint definitions are supplied to the POC.
 - Team-member definitions are supplied to the POC.
 - Board-column definitions are supplied to the POC, including exactly one origin designation.
 - No live Jira, ServiceNow, or Epic Nova synchronization.
 - Multi Board-owned state must survive refresh/restart.
 - Accepted source projections and Multi Board-owned state must be reconstructable without browser/session/conversation state.
-- Source refresh is validated and accepted atomically; failed imports preserve the last-known-good projection.
+- Source refresh is validated and accepted atomically per source; failed imports preserve that source's last-known-good projection.
 - The application must remain local-only for R1 and require no off-site sensitive-data storage.
 - The required software stack must have zero mandatory license, hosting, subscription, or service fees.
 - The Product Owner must not need local-administrator rights to build or run the POC.
@@ -91,12 +109,15 @@ The release candidate must demonstrate:
 7. Move work between board columns using drag/drop.
 8. Filter the board by Multi Board team assignee.
 9. Retain Scrum state across refresh/restart.
-10. Retain timestamped board-column transition history.
+10. Retain timestamped board-column transition history with sprint context.
 11. Distinguish source-owned information from Multi Board-owned Scrum state throughout.
 12. Archive and hide an item after a successfully accepted source projection no longer contains it, without losing its persisted Scrum/history state.
-13. Surface orphaned/invalid persisted state caused by configuration changes instead of silently remapping it.
-14. Complete the journey through a professional, modern, cohesive interface without requiring an apology for prototype-quality UI.
-15. Operate without sending sensitive source/work data to external services.
+13. Reactivate a reappearing archived item without duplicating or resetting its Scrum state.
+14. Demonstrate that failure of one source refresh does not corrupt or block valid refreshes from other sources.
+15. Surface orphaned/invalid persisted state caused by configuration changes instead of silently remapping it.
+16. Demonstrate sprint removal/change semantics, including clearing board state when unsprinted and resetting to destination origin when moved between sprints.
+17. Complete the journey through a professional, modern, cohesive interface without requiring an apology for prototype-quality UI.
+18. Operate without sending sensitive source/work data to external services.
 
 ## Story sequence
 
