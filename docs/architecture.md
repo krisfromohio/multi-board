@@ -85,8 +85,9 @@ Multi Board-owned state includes:
 - sprint assignment
 - backlog ordering
 - team assignee
-- board column
+- board column while sprint-assigned
 - board-column transition history
+- archived marker for source items absent from the latest accepted projection for their source
 
 `sourceAssignee` and `teamAssignee` are intentionally separate.
 
@@ -94,9 +95,11 @@ Multi Board-owned state includes:
 
 The application consumes a normalized `ExternalWorkItem` model through source adapters.
 
-Release 1 implements a JSON adapter. Future adapters may include Jira, ServiceNow, and Epic Nova without changing the domain model used by the UI and application services.
+Release 1 implements JSON-backed source adapters. Future adapters may include Jira, ServiceNow, and Epic Nova without changing the domain model used by the UI and application services.
 
 JSON is therefore an **integration mechanism**, not the working database.
+
+Each source is refreshed independently. Jira, ServiceNow, and Epic Nova have separate last-known-good projections. Failure of one source refresh must not block acceptance of a valid refresh from another source. Archival is scoped only to the source whose refresh was successfully accepted.
 
 ### 4. Persistence is behind a narrow repository seam
 
@@ -121,20 +124,32 @@ The exact physical schema may evolve while stories are implemented.
 
 ### Source projection refresh
 
-Source imports should follow this model:
+Each source refresh follows this model independently:
 
 ```text
 external input
   -> parse
   -> validate
   -> normalize
-  -> transactional import
+  -> transactional import for that source
   -> last-known-good source projection
 ```
 
 A malformed import must not silently replace valid source data with an incomplete or misleading projection.
 
-If a previously known source item is absent from a later successfully accepted source projection, it is marked archived and omitted from active views while its Scrum overlay and board-transition history remain persisted. A failed import must not archive items.
+If a previously known source item is absent from a later successfully accepted projection for that same source, it is marked archived and omitted from active views while its Scrum overlay and board-transition history remain persisted. A failed import must not archive items.
+
+If an archived item later reappears with the same immutable `(sourceSystem, sourceId)` identity, Multi Board reactivates that existing item and preserves its previously stored Scrum overlay and transition history. It must not create a duplicate or silently reset the item's Scrum state.
+
+### Sprint and board-state lifecycle
+
+Board column is meaningful only while an item is sprint-assigned.
+
+- assigning an unsprinted item to a sprint sets its current board column to that sprint board's configured `origin`
+- removing an item from a sprint clears its current board column
+- moving an item directly from one sprint to another resets its current board column to the destination sprint's configured `origin`; it does not carry workflow state across sprint boundaries
+
+These changes are recorded in board transition history. A transition may therefore have a null `from` or `to` column when entering or leaving sprint context.
 
 ### Board origin and configuration integrity
 
@@ -146,10 +161,21 @@ If persisted Scrum state refers to a sprint, team member, or board column remove
 
 Board movement updates current board state and appends transition history in one database transaction. A successful move must not leave current state and history inconsistent.
 
+Each transition records at least:
+
+- work-item identity
+- sprint context
+- previous column, nullable
+- resulting column, nullable
+- timestamp
+
+Including sprint context preserves historical meaning when an item participates in more than one sprint over time.
+
 ## Resilience principles
 
 - Validate all external/configuration input before accepting it.
 - Prefer last-known-good state over destructive replacement after an invalid import.
+- Scope source-refresh failure and archival to the affected source only.
 - Apply state-changing operations transactionally where multiple records must remain consistent.
 - Surface invalid configured states rather than silently coercing them.
 - Ensure persisted Scrum state can reconstruct the working board after refresh or restart.
@@ -183,6 +209,9 @@ Use Vitest for business rules such as:
 - unestimated versus explicit zero
 - invalid board-column rejection
 - source refresh not overwriting Scrum-owned state
+- per-source last-known-good isolation
+- archival and reactivation semantics
+- sprint assignment/removal/reset-to-origin lifecycle
 - board movement and history invariants
 
 ### Persistence integration tests
@@ -197,7 +226,7 @@ Use Playwright for representative user journeys that map directly to story accep
 
 No distributed cache, Redis, queue, search engine, WebSocket layer, event bus, or microservice architecture is justified for Release 1.
 
-SQLite indexes should follow observed access paths such as source identity, sprint, team assignee, board column, and work-item history.
+SQLite indexes should follow observed access paths such as source identity, sprint, team assignee, board column, archived status, and work-item history.
 
 Optimize only after representative workload demonstrates a problem.
 
@@ -233,6 +262,9 @@ The following should remain substantially stable:
 7. R1 must require zero mandatory license, subscription, hosting, or service fees.
 8. R1 development and operation must not require local-administrator rights from the Product Owner.
 9. GitHub may hold non-confidential code/docs and synthetic fixtures; real source-system data and other sensitive runtime artifacts stay local and uncommitted.
+10. Source refreshes are isolated by source system and preserve each source's last-known-good projection independently.
+11. Work-item identity is stable across archive/reactivation and is based on `(sourceSystem, sourceId)`.
+12. Board state is sprint-contextual and transition history records sprint context.
 
 ## Open environment check
 
